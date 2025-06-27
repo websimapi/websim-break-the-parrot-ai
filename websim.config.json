@@ -1,7 +1,7 @@
 {
   "database": {
     "schema": {
-      "attempts_v2": {
+      "attempts_v3": {
         "id": {
           "type": "uuid",
           "description": "The unique identifier for the attempt."
@@ -21,6 +21,20 @@
         "success": {
           "type": "boolean",
           "description": "Whether the attempt was successful (user won)."
+        }
+      },
+      "user_stats_v1": {
+        "id": {
+            "type": "uuid",
+            "description": "The user_id, acting as the primary key."
+        },
+        "attempt_count": {
+            "type": "integer",
+            "description": "Total number of attempts made by the user."
+        },
+        "success_count": {
+            "type": "integer",
+            "description": "Total number of successful breaks by the user."
         }
       }
     }
