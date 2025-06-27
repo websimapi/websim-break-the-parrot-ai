@@ -1,0 +1,29 @@
+{
+  "database": {
+    "schema": {
+      "attempts_v2": {
+        "id": {
+          "type": "uuid",
+          "description": "The unique identifier for the attempt."
+        },
+        "user_id": {
+          "type": "uuid",
+          "description": "The user who made the attempt."
+        },
+        "prompt_text": {
+          "type": "text",
+          "description": "The prompt text sent by the user."
+        },
+        "ai_response": {
+          "type": "text",
+          "description": "The response from the AI."
+        },
+        "success": {
+          "type": "boolean",
+          "description": "Whether the attempt was successful (user won)."
+        }
+      }
+    }
+  }
+}
+
