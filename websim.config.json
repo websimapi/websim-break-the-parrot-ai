@@ -1,7 +1,7 @@
 {
   "database": {
     "schema": {
-      "attempts_v3": {
+      "attempts_v4": {
         "id": {
           "type": "uuid",
           "description": "The unique identifier for the attempt."
@@ -23,7 +23,7 @@
           "description": "Whether the attempt was successful (user won)."
         }
       },
-      "user_stats_v1": {
+      "user_stats_v2": {
         "id": {
             "type": "uuid",
             "description": "The user_id, acting as the primary key."

@@ -22,7 +22,7 @@ function App() {
     }
   }, [messages]);
   const { data: userStatsData, loading: userStatsLoading } = useQuery(
-    currentUser ? room.collection("user_stats_v1").filter({ id: currentUser.id }) : null
+    currentUser ? room.collection("user_stats_v2").filter({ id: currentUser.id }) : null
   );
   useEffect(() => {
     if (!userStatsLoading) {
@@ -56,17 +56,21 @@ function App() {
       });
       const aiText = completion.content.trim();
       const success = text !== aiText;
-      await room.collection("attempts_v3").create({
-        prompt_text: text,
-        ai_response: aiText,
-        success
-      });
       const currentStats = userStatsData && userStatsData[0] ? userStatsData[0] : { attempt_count: 0, success_count: 0 };
-      await room.collection("user_stats_v1").upsert({
-        id: currentUser.id,
-        attempt_count: (currentStats.attempt_count || 0) + 1,
-        success_count: (currentStats.success_count || 0) + (success ? 1 : 0)
-      });
+      const newAttemptCount = (currentStats.attempt_count || 0) + 1;
+      const newSuccessCount = (currentStats.success_count || 0) + (success ? 1 : 0);
+      await room.batch([
+        room.collection("attempts_v4").createOp({
+          prompt_text: text,
+          ai_response: aiText,
+          success
+        }),
+        room.collection("user_stats_v2").upsertOp({
+          id: currentUser.id,
+          attempt_count: newAttemptCount,
+          success_count: newSuccessCount
+        })
+      ]);
       const aiMessage = { sender: "ai", text: aiText, isError: success, username: "Parrot AI" };
       setMessages((prev) => [...prev, aiMessage]);
       if (success) {
@@ -75,8 +79,8 @@ function App() {
         setMessages((prev) => [...prev, systemWinMessage]);
       }
     } catch (error) {
-      console.error("Error calling AI:", error);
-      const errorMessage = { sender: "system", text: "An error occurred with the AI service. Please try again." };
+      console.error("Error during send message:", error);
+      const errorMessage = { sender: "system", text: "An error occurred. Please try again." };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsSending(false);
@@ -87,37 +91,37 @@ function App() {
       /* @__PURE__ */ jsxDEV("div", { className: "header", children: [
         /* @__PURE__ */ jsxDEV("h1", { children: "Break the Parrot AI" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 109,
+          lineNumber: 113,
           columnNumber: 25
         }, this),
         /* @__PURE__ */ jsxDEV("p", { children: "Make the AI say anything other than your exact input. Only English letters, numbers, and spaces are allowed." }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 110,
+          lineNumber: 114,
           columnNumber: 25
         }, this)
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 108,
+        lineNumber: 112,
         columnNumber: 21
       }, this),
       /* @__PURE__ */ jsxDEV("div", { id: "chat-box", ref: chatBoxRef, children: messages.map((msg, index) => /* @__PURE__ */ jsxDEV("div", { className: `message ${msg.sender}-message ${msg.isError ? "error" : ""}`, children: [
         msg.sender !== "system" && /* @__PURE__ */ jsxDEV("img", { src: getAvatar(msg.username), alt: msg.username, className: `w-8 h-8 rounded-full ${msg.sender === "user" ? "ml-2" : "mr-2"}` }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 115,
+          lineNumber: 119,
           columnNumber: 61
         }, this),
         /* @__PURE__ */ jsxDEV("span", { children: msg.text }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 116,
+          lineNumber: 120,
           columnNumber: 33
         }, this)
       ] }, index, true, {
         fileName: "<stdin>",
-        lineNumber: 114,
+        lineNumber: 118,
         columnNumber: 30
       }, this)) }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 112,
+        lineNumber: 116,
         columnNumber: 21
       }, this),
       /* @__PURE__ */ jsxDEV("div", { id: "game-status", children: [
@@ -126,22 +130,22 @@ function App() {
         gameOver && /* @__PURE__ */ jsxDEV(Fragment, { children: [
           /* @__PURE__ */ jsxDEV("br", {}, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 122,
+            lineNumber: 126,
             columnNumber: 41
           }, this),
           /* @__PURE__ */ jsxDEV("span", { className: "win-message", children: "YOU'VE WON!" }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 122,
+            lineNumber: 126,
             columnNumber: 46
           }, this)
         ] }, void 0, true, {
           fileName: "<stdin>",
-          lineNumber: 122,
+          lineNumber: 126,
           columnNumber: 39
         }, this)
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 120,
+        lineNumber: 124,
         columnNumber: 21
       }, this),
       /* @__PURE__ */ jsxDEV("div", { id: "input-container", children: [
@@ -160,42 +164,42 @@ function App() {
           false,
           {
             fileName: "<stdin>",
-            lineNumber: 125,
+            lineNumber: 129,
             columnNumber: 25
           },
           this
         ),
         /* @__PURE__ */ jsxDEV("button", { id: "send-btn", onClick: handleSendMessage, disabled: isSending || gameOver || !currentUser, children: isSending ? "..." : "Send" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 134,
+          lineNumber: 138,
           columnNumber: 25
         }, this)
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 124,
+        lineNumber: 128,
         columnNumber: 21
       }, this)
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 107,
+      lineNumber: 111,
       columnNumber: 17
     }, this) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 106,
+      lineNumber: 110,
       columnNumber: 13
     }, this),
     /* @__PURE__ */ jsxDEV("div", { className: "flex-1 p-2 md:p-4 overflow-y-auto min-w-0", children: /* @__PURE__ */ jsxDEV(Leaderboard, {}, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 141,
+      lineNumber: 145,
       columnNumber: 17
     }, this) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 140,
+      lineNumber: 144,
       columnNumber: 13
     }, this)
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 105,
+    lineNumber: 109,
     columnNumber: 9
   }, this);
 }
@@ -205,15 +209,16 @@ function Leaderboard() {
             u.username,
             s.attempt_count,
             s.success_count
-        FROM public.user_stats_v1 s
+        FROM public.user_stats_v2 s
         JOIN public.user u ON s.id = u.id
-        ORDER BY s.attempt_count DESC, s.success_count DESC
+        WHERE s.attempt_count > 0
+        ORDER BY s.success_count DESC, s.attempt_count ASC
         LIMIT 20
     `));
   const { data: successfulAttempts, loading: loadingSuccess } = useQuery(room.query(`
         SELECT
             a.id, a.prompt_text, a.ai_response, a.created_at, u.username
-        FROM public.attempts_v3 a
+        FROM public.attempts_v4 a
         JOIN public.user u ON a.user_id = u.id
         WHERE a.success = true
         ORDER BY a.created_at DESC
@@ -222,7 +227,7 @@ function Leaderboard() {
   const { data: allAttempts, loading: loadingAll } = useQuery(room.query(`
         SELECT
             a.id, a.prompt_text, a.created_at, u.username, a.success
-        FROM public.attempts_v3 a
+        FROM public.attempts_v4 a
         JOIN public.user u ON a.user_id = u.id
         ORDER BY a.created_at DESC
         LIMIT 50
@@ -230,95 +235,92 @@ function Leaderboard() {
   return /* @__PURE__ */ jsxDEV("div", { className: "bg-white p-4 md:p-6 rounded-lg shadow-lg h-full flex flex-col", children: [
     /* @__PURE__ */ jsxDEV("h2", { className: "text-2xl font-bold mb-4 text-center", children: "Leaderboards" }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 180,
+      lineNumber: 185,
       columnNumber: 13
     }, this),
     /* @__PURE__ */ jsxDEV("div", { className: "flex-grow overflow-y-auto pr-2", children: [
       /* @__PURE__ */ jsxDEV("div", { className: "mb-8", children: [
-        /* @__PURE__ */ jsxDEV("h3", { className: "text-xl font-semibold mb-3", children: "Top Jailbreakers (by attempts)" }, void 0, false, {
+        /* @__PURE__ */ jsxDEV("h3", { className: "text-xl font-semibold mb-3", children: "Top Jailbreakers" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 183,
+          lineNumber: 188,
           columnNumber: 21
         }, this),
         loadingLeaderboard ? /* @__PURE__ */ jsxDEV("p", { children: "Loading..." }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 184,
+          lineNumber: 189,
           columnNumber: 43
         }, this) : /* @__PURE__ */ jsxDEV("ol", { className: "list-decimal list-inside space-y-2", children: leaderboardData?.map((user) => /* @__PURE__ */ jsxDEV("li", { className: "flex items-center", children: [
           /* @__PURE__ */ jsxDEV("img", { src: getAvatar(user.username), alt: user.username, className: "w-8 h-8 rounded-full inline-block mr-3" }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 188,
+            lineNumber: 193,
             columnNumber: 37
           }, this),
           /* @__PURE__ */ jsxDEV("div", { children: [
             /* @__PURE__ */ jsxDEV("span", { className: "font-bold", children: user.username }, void 0, false, {
               fileName: "<stdin>",
-              lineNumber: 190,
+              lineNumber: 195,
               columnNumber: 39
             }, this),
-            ": ",
-            user.attempt_count,
-            " attempts",
             /* @__PURE__ */ jsxDEV("span", { className: user.success_count > 0 ? "text-green-600 font-semibold" : "text-gray-500", children: [
               " (",
-              user.success_count > 0 ? `${user.success_count} win${user.success_count > 1 ? "s" : ""}` : "0 wins",
+              user.success_count > 0 ? `Broke in ${user.attempt_count} attempts` : `${user.attempt_count} attempts, 0 breaks`,
               ")"
             ] }, void 0, true, {
               fileName: "<stdin>",
-              lineNumber: 191,
+              lineNumber: 196,
               columnNumber: 39
             }, this)
           ] }, void 0, true, {
             fileName: "<stdin>",
-            lineNumber: 189,
+            lineNumber: 194,
             columnNumber: 37
           }, this)
         ] }, user.username, true, {
           fileName: "<stdin>",
-          lineNumber: 187,
+          lineNumber: 192,
           columnNumber: 33
         }, this)) }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 185,
+          lineNumber: 190,
           columnNumber: 25
         }, this)
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 182,
+        lineNumber: 187,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("div", { className: "mb-8", children: [
         /* @__PURE__ */ jsxDEV("h3", { className: "text-xl font-semibold mb-3", children: "Successful Breaks" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 200,
+          lineNumber: 205,
           columnNumber: 21
         }, this),
         loadingSuccess ? /* @__PURE__ */ jsxDEV("p", { children: "Loading..." }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 201,
+          lineNumber: 206,
           columnNumber: 39
         }, this) : /* @__PURE__ */ jsxDEV("ul", { className: "space-y-3", children: successfulAttempts?.length > 0 ? successfulAttempts.map((att) => /* @__PURE__ */ jsxDEV("li", { className: "bg-green-50 border border-green-200 p-3 rounded-lg", children: [
           /* @__PURE__ */ jsxDEV("p", { className: "flex items-center", children: [
             /* @__PURE__ */ jsxDEV("img", { src: getAvatar(att.username), alt: att.username, className: "w-7 h-7 rounded-full mr-2" }, void 0, false, {
               fileName: "<stdin>",
-              lineNumber: 206,
+              lineNumber: 211,
               columnNumber: 41
             }, this),
             /* @__PURE__ */ jsxDEV("span", { className: "font-semibold", children: att.username }, void 0, false, {
               fileName: "<stdin>",
-              lineNumber: 207,
+              lineNumber: 212,
               columnNumber: 41
             }, this),
             "\xA0broke the parrot!"
           ] }, void 0, true, {
             fileName: "<stdin>",
-            lineNumber: 205,
+            lineNumber: 210,
             columnNumber: 37
           }, this),
           /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-gray-700 mt-2 pl-1", children: [
             /* @__PURE__ */ jsxDEV("strong", { children: "Prompt:" }, void 0, false, {
               fileName: "<stdin>",
-              lineNumber: 209,
+              lineNumber: 214,
               columnNumber: 84
             }, this),
             ' "',
@@ -326,13 +328,13 @@ function Leaderboard() {
             '"'
           ] }, void 0, true, {
             fileName: "<stdin>",
-            lineNumber: 209,
+            lineNumber: 214,
             columnNumber: 37
           }, this),
           /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-red-700 mt-1 pl-1", children: [
             /* @__PURE__ */ jsxDEV("strong", { children: "AI Said:" }, void 0, false, {
               fileName: "<stdin>",
-              lineNumber: 210,
+              lineNumber: 215,
               columnNumber: 83
             }, this),
             ' "',
@@ -340,51 +342,51 @@ function Leaderboard() {
             '"'
           ] }, void 0, true, {
             fileName: "<stdin>",
-            lineNumber: 210,
+            lineNumber: 215,
             columnNumber: 37
           }, this),
           /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-gray-500 text-right mt-1", children: new Date(att.created_at).toLocaleString() }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 211,
+            lineNumber: 216,
             columnNumber: 37
           }, this)
         ] }, att.id, true, {
           fileName: "<stdin>",
-          lineNumber: 204,
+          lineNumber: 209,
           columnNumber: 33
         }, this)) : /* @__PURE__ */ jsxDEV("p", { className: "text-gray-500", children: "No successful breaks yet!" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 213,
+          lineNumber: 218,
           columnNumber: 34
         }, this) }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 202,
+          lineNumber: 207,
           columnNumber: 25
         }, this)
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 199,
+        lineNumber: 204,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("div", { children: [
         /* @__PURE__ */ jsxDEV("h3", { className: "text-xl font-semibold mb-3", children: "All Attempts Feed" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 219,
+          lineNumber: 224,
           columnNumber: 21
         }, this),
         loadingAll ? /* @__PURE__ */ jsxDEV("p", { children: "Loading..." }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 220,
+          lineNumber: 225,
           columnNumber: 35
         }, this) : /* @__PURE__ */ jsxDEV("ul", { className: "space-y-2 text-sm", children: allAttempts?.map((att) => /* @__PURE__ */ jsxDEV("li", { className: `p-2 rounded flex items-center ${att.success ? "bg-green-50" : "bg-gray-50"}`, children: [
           /* @__PURE__ */ jsxDEV("img", { src: getAvatar(att.username), alt: att.username, className: "w-6 h-6 rounded-full mr-2" }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 224,
+            lineNumber: 229,
             columnNumber: 37
           }, this),
           /* @__PURE__ */ jsxDEV("span", { className: "font-semibold", children: att.username }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 225,
+            lineNumber: 230,
             columnNumber: 37
           }, this),
           /* @__PURE__ */ jsxDEV("span", { className: "truncate mx-2 flex-1", children: [
@@ -393,42 +395,42 @@ function Leaderboard() {
             '"'
           ] }, void 0, true, {
             fileName: "<stdin>",
-            lineNumber: 226,
+            lineNumber: 231,
             columnNumber: 37
           }, this),
           /* @__PURE__ */ jsxDEV("span", { className: `font-bold ml-2 ${att.success ? "text-green-600" : "text-red-600"}`, children: att.success ? "SUCCESS" : "FAIL" }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 227,
+            lineNumber: 232,
             columnNumber: 37
           }, this)
         ] }, att.id, true, {
           fileName: "<stdin>",
-          lineNumber: 223,
+          lineNumber: 228,
           columnNumber: 33
         }, this)) }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 221,
+          lineNumber: 226,
           columnNumber: 25
         }, this)
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 218,
+        lineNumber: 223,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 181,
+      lineNumber: 186,
       columnNumber: 13
     }, this)
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 179,
+    lineNumber: 184,
     columnNumber: 9
   }, this);
 }
 const root = createRoot(document.getElementById("root"));
 root.render(/* @__PURE__ */ jsxDEV(App, {}, void 0, false, {
   fileName: "<stdin>",
-  lineNumber: 241,
+  lineNumber: 246,
   columnNumber: 13
 }));
